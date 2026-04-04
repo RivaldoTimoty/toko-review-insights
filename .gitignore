@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+*.egg-info/
+
+# Data — hasil crawling tidak di-commit
+data/*.csv
+data/*.json
+data/*.html
+
+# Generated reports & assets (besar, bisa di-generate ulang)
+reports/
+assets/
+
+# Streamlit cache
+.streamlit/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp
