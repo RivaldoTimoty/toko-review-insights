@@ -43,13 +43,13 @@ def scrape_ulasan(url, output_filename):
             if reviews.count() == 0:
                 break
                 
-            extracted_data = page.evaluate('''() => {
+            extracted_data = page.evaluate(r'''() => {
                 let results = [];
                 let articles = document.querySelectorAll("article");
                 
                 for(let art of articles) {
                     let textContent = art.innerText.trim();
-                    let lines = textContent.split('\\n').map(l => l.trim()).filter(l => l.length > 0);
+                    let lines = textContent.split('\n').map(l => l.trim()).filter(l => l.length > 0);
                     
                     if (lines.length < 2 || textContent.includes("pembeli merasa puas") || (textContent.includes("rating") && textContent.includes("ulasan") && lines.length > 5 && lines[0].includes("."))) {
                         continue;
@@ -67,7 +67,7 @@ def scrape_ulasan(url, output_filename):
                     if (goldStars === 0) {
                         let ratingLabel = art.querySelector('[aria-label*="bintang"]');
                         if (ratingLabel) {
-                            let match = ratingLabel.getAttribute('aria-label').match(/\\d+/);
+                            let match = ratingLabel.getAttribute('aria-label').match(/\d+/);
                             if (match) goldStars = parseInt(match[0]);
                         }
                     }

@@ -1,127 +1,74 @@
-# Toko-Review-Insights
+# Toko-Review-Insights: Automated E-Commerce Sentiment & NLP Pipeline 🕷️
 
-A practical review intelligence tool built on top of Tokopedia's product pages. It combines browser automation with lightweight NLP to help you understand what customers are actually saying — especially the unhappy ones.
+## Overview
+Toko-Review-Insights is an end-to-end data extraction and analysis pipeline designed to scrape, structure, and analyze product reviews from Tokopedia. By combining robust browser automation (Playwright) with Natural Language Processing (NLP), this tool bypasses traditional aggregate metrics to uncover actionable consumer insights, recurring pain points, and product deficit areas. 
 
----
+## Business Value
+Standard e-commerce dashboards focus on top-level metrics (e.g., 4.5 average rating). However, the underlying qualitative data—the root cause of negative sentiment—is largely unstructured. This project automates the ETL (Extract, Transform, Load) process and directly performs Exploratory Data Analysis (EDA) on textual feedback, highlighting critical n-gram anomalies (complaints) efficiently.
 
-## Background
+## Core Architecture
+The system features a unified premium frontend interface wrapping three core data engines:
+1. **Comprehensive Extraction Engine (All Reviews)**: Crawls paginated product reviews indiscriminately, building a complete textual and categorical dataset.
+2. **Deficit/Negative Sentiment Engine (1-3★)**: Pre-filters the DOM to isolate lower-quartile ratings. Ideal for root-cause analysis of negative sentiment.
+3. **Automated EDA & NLP Reporting System**: Consumes extracted CSVs to synthesize a markdown-based analytical report. Generates frequency distributions, top variant metrics, and complaint-driven WordClouds utilizing custom Bigram/Trigram tokenization.
 
-Most product analytics pipelines focus on aggregate metrics: average rating, order volume, conversion rate. What they often miss is the unstructured signal sitting inside customer reviews — the *why* behind a 2-star rating, the recurring complaint pattern that a dashboard won't surface, the exact phrase that shows up in 40 different complaints about sizing.
+## Technical Methodology
+- **Headful Web Scraping**: Adapts to strict bot-mitigation mechanisms by utilizing Playwright headful operations, introducing realistic human interactions (scroll jitters, DOM observation delays).
+- **DOM-based Rating Extraction**: Bypasses missing text labels by algorithmically scoring SVG node properties (`aria-label`, matrix color signatures `#FFD45F`) for robust star-rating calculations.
+- **Stopword & Tokenization Tuning**: Custom textual pipeline configured specifically for Indonesian e-commerce conversational linguistics (e.g., removing stop words like "gan", "yg", "kalo").
 
-This project started as a personal utility to quickly pull review data from Tokopedia and generate a digestible summary without having to open a Jupyter notebook every time.
-
----
-
-## What It Does
-
-There are three independent apps in this repo, each solving a different step of the workflow:
-
-**`app.py`** — Crawls all reviews from a given product URL across all paginated pages.
-
-**`app_bad.py`** — Same, but applies Tokopedia's built-in rating filter (1–3 stars) before crawling. Useful when you only care about negative feedback and don't want to filter post-hoc.
-
-**`app_report.py`** — Takes any crawled CSV file and generates a full EDA report: rating distribution, top-selling variants, and a word cloud built from bigrams and trigrams extracted from low-rating reviews.
-
-Each app exposes a minimal Streamlit UI — no notebooks required.
-
----
-
-## How the Crawler Works
-
-Tokopedia aggressively blocks headless browsers. The engine launches a visible Chromium window (`headless=False`) and mimics a real user: scrolling slowly, waiting for GraphQL calls to resolve, and paginating through the review section. Star ratings are extracted by inspecting SVG fill colors (`#FFD45F`) in the DOM rather than relying on text, which is more stable across Tokopedia's periodic UI updates.
-
-For the bad-review crawler specifically, the filter panel is clicked programmatically after the review tab loads — targeting checkboxes for ratings 1, 2, and 3 the same way a user would.
-
----
-
-## Report Output
-
-When you run the report generator on a CSV, it produces the following inside `reports/<filename>/`:
-
-```
-reports/
-└── sendal/
-    ├── report_sendal.md
-    └── assets/
-        ├── rating_distribution.png
-        ├── varian_distribution.png
-        └── wordcloud_komplain.png
-```
-
-The word cloud is generated from **n-gram frequencies** (bigrams and trigrams), not raw word counts. This means you'll see phrases like *"ukuran tidak sesuai"* or *"cepat rusak"* instead of isolated words like *"ukuran"* or *"rusak"* — which tells you a lot more about the actual problem.
-
----
-
-## Project Structure
-
-```
+## Project Directory
+```text
 .
-├── app.py                  # Crawl all reviews
-├── app_bad.py              # Crawl 1–3 star reviews only
-├── app_report.py           # EDA report generator UI
+├── app.py                  # Streamlit Unified Analytics Interface
 ├── engines/
-│   ├── agent_ulasan.py     # Core Playwright crawler (all ratings)
-│   ├── agent_ulasan_bad.py # Crawler with rating filter applied
-│   └── generate_report.py  # Report + chart generation logic
-├── data/                   # CSV output from crawls
-├── reports/                # Generated markdown reports
-├── assets/                 # Standalone chart exports
-└── scripts/
-    └── generate_plots.py   # Standalone plot script (optional CLI use)
+│   ├── agent_ulasan.py     # Unfiltered Web Scraper
+│   ├── agent_ulasan_bad.py # Negative Sentiment Web Scraper
+│   └── generate_report.py  # NLP & Statistical Reporting Engine
+├── data/                   # Target directory for CSV datasets
+├── reports/                # Target directory for generated Markdown EDA
+└── assets/                 # Supporting CSS/Visual rendering assets
 ```
 
----
-
-## Setup
-
-Python 3.10+ is recommended. Install dependencies into a virtual environment:
+## System Requirements & Setup
+Requires Python 3.10 or higher.
 
 ```bash
+# 1. Initialize Virtual Environment
 python -m venv .venv
-.venv\Scripts\Activate.ps1        # Windows PowerShell
+source .venv/Scripts/activate
+
+# 2. Install Pipeline Dependencies
 pip install streamlit playwright wordcloud pandas matplotlib seaborn
+
+# 3. Provision Browser Binaries
 playwright install chromium
 ```
 
----
-
-## Usage
-
-Activate the environment, then navigate to the project root:
-
+## Execution
+Launch the primary GUI application:
 ```bash
-# Crawl all reviews
 streamlit run app.py
-
-# Crawl negative reviews only (1–3 stars)
-streamlit run app_bad.py
-
-# Generate EDA report from an existing CSV
-streamlit run app_report.py
 ```
+*Note: Do not minimize or interact heavily with the Chromium instance spawned during extraction. It relies on page visibility and viewport heuristics to maintain session validity.*
 
-Paste a Tokopedia product URL into the input field, give the output file a name, and let it run. Don't close the Chromium window that opens — it's not a bug, it's how we get past the bot detection.
+## Analytics Output
+The report synthesis module outputs an analysis payload in `./reports/<dataset_name>/`:
+- `report_<dataset_name>.md`: Comprehensive NLP & Sentiment Markdown Report.
+- `/assets`: Vectorized distributions and N-gram visualizations.
 
----
+**Why N-Grams?** The WordCloud methodology isolates **Bigrams** and **Trigrams** instead of Unigrams. Identifying pairs like "layar pecah" (broken screen) or "pengiriman lama" (late delivery) is exponentially more actionable than single words like "layar" or "pengiriman".
 
-## Limitations
+## Technical Constraints & Considerations
+- **Frontend Mutability**: E-commerce platforms deploy A/B tests and aggressive UI changes. Element selectors (`data-testid`, SVG color palettes) may require periodic calibration.
+- **Rate-Limiting (CAPTCHA)**: Extreme data extraction constraints may invoke physical CAPTCHAs. Session pausing is currently handled manually if detected.
+- **Geolinguistics**: The hardcoded Text Processor is strictly optimized for the Indonesian localization.
 
-- **DOM volatility.** Tokopedia updates its frontend periodically. If the crawler stops working, the first thing to check is the SVG color attribute used for star detection and the `aria-label` selectors for pagination buttons.
-- **Rate and CAPTCHA.** On products with a very large number of reviews, Tokopedia may serve a CAPTCHA mid-session. If that happens, the crawl stops naturally. Consider running in shorter bursts with a manual review.
-- **Single-language NLP.** The stop word list and n-gram extraction are tuned for Indonesian product review language. It won't generalize well to English-language content without adjusting the stop word dictionary.
-
----
-
-## Stack
-
-| Layer | Tool |
+## Tech Stack
+| Component | Implementation |
 |---|---|
-| Browser Automation | Playwright (Chromium, headful) |
-| Data Processing | pandas, collections |
-| NLP / Text | Custom n-gram tokenizer, WordCloud |
-| Visualization | matplotlib, seaborn |
-| UI | Streamlit |
-
----
-
-> Built for personal use. Works until Tokopedia changes something, then needs a small fix.
+| **Extraction Automation** | Playwright (Chromium) |
+| **Data Orchestration** | Pandas, Collections API |
+| **NLP Vectorization** | Custom N-Gram Tokenizer, WordCloud ecosystem |
+| **Statistical Visualization** | Matplotlib, Seaborn |
+| **Application Layer** | Streamlit (Glassmorphism Framework) |
